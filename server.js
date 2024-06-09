@@ -1,6 +1,7 @@
 const fs = require('fs');
 const express = require('express');
 const MqttServer = require('./mqtt-server');
+const { error } = require('console');
 const app = express();
 const port = 3000;
 const mqttServer = new MqttServer();
@@ -44,7 +45,10 @@ function getCurrentDate() {
 app.get('/last-reading', (req, res) => {
     fs.readFile('data.txt', 'utf8', (err, data) => {
         if (err) {
-            return res.status(500).send('Error reading file');
+            return res.status(500).send({
+                error: "Internal server error",
+                errorDescription: "Error reading file"
+            });
         }
 
         const lines = data.trim().split('\n');
@@ -68,12 +72,18 @@ app.get('/last-reading', (req, res) => {
 app.get('/hourly-readings', (req, res) => {
     const { date } = req.query;
     if (!date || !isValidDate(date)) {
-        return res.status(400).send('Invalid date format');
+        return res.status(422).send({
+            error: "Unprocessable content",
+            errorDescription: "Invalid date format"
+        });
     }
 
     fs.readFile('data.txt', 'utf8', (err, data) => {
         if (err) {
-            return res.status(500).send('Error reading file');
+            return res.status(500).send({
+                error: "Internal server error",
+                errorDescription: "Error reading file"
+            });
         }
 
         const lines = data.trim().split('\n');
@@ -114,8 +124,11 @@ app.get('/hourly-readings', (req, res) => {
             }
         });
 
-        if (hourlyReadings.length == 0) {
-            return res.status(404).send('Not found');
+        if (hourlyReadings.length == 0 || hourlyReadings.length == undefined) {
+            return res.status(404).send({
+                error: "Not found",
+                errorDescription: "No data for that date"
+            });
         }
 
         // Обчислення середніх значень за кожну годину
@@ -158,7 +171,10 @@ function calculateHourlyAverage(readings) {
 app.get('/daily-averages', (req, res) => {
     const { days } = req.query;
     if (!days || isNaN(days) || days <= 0) {
-        return res.status(400).send('Invalid days parameter');
+        return res.status(422).send({
+            error: "Unprocessable content",
+            errorDescription: "Invalid days parameter"
+        });
     }
 
     const endDate = getCurrentDate();
@@ -168,7 +184,10 @@ app.get('/daily-averages', (req, res) => {
     
     fs.readFile('data.txt', 'utf8', (err, data) => {
         if (err) {
-            return res.status(500).send('Error reading file');
+            return res.status(500).send({
+                error: "Internal server error!",
+                errorDescription: "Error reading file"
+            });
         }
 
         const lines = data.trim().split('\n');

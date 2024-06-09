@@ -13,6 +13,13 @@ class MqttServer {
         });
 
         this.#aedes.authenticate = (client, username, password, callback) => {
+            if (password == undefined || username == undefined) {
+                const error = new Error('Authentication Failed!! Invalid user credentials.');
+
+                console.log('Error ! Authentication failed.')
+                return callback(error, false)
+            }
+
             password = Buffer.from(password, 'base64').toString();
 
             if (username === this.#propertiesReader.get('username') && password === this.#propertiesReader.get('password')) {

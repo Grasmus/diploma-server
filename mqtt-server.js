@@ -39,26 +39,36 @@ class MqttServer {
         }
 
         this.#aedes.on('client', function (client) {
-            console.log(`[CLIENT_CONNECTED] Client ${(client ? client.id : client)} connected to broker`)
+            let currentDate = new Date(); 
+
+            console.log(`[${currentDate.toLocaleString()}] Client ${(client ? client.id : client)} connected to broker`)
         })
 
         this.#aedes.on('clientDisconnect', function (client) {
-            console.log(`[CLIENT_DISCONNECTED] Client ${(client ? client.id : client)} disconnected from the broker`)
+            let currentDate = new Date(); 
+
+            console.log(`[${currentDate.toLocaleString()}] Client ${(client ? client.id : client)} disconnected from the broker`)
         })
 
         this.#aedes.on('subscribe', function (subscriptions, client) {
-            console.log(`[TOPIC_SUBSCRIBED] Client ${(client ? client.id : client)} subscribed to topics: ${subscriptions.map(s => s.topic).join(',')}`)
+            let currentDate = new Date(); 
+
+            console.log(`[${currentDate.toLocaleString()}] Client ${(client ? client.id : client)} subscribed to topics: ${subscriptions.map(s => s.topic).join(',')}`)
         })
 
         this.#aedes.on('unsubscribe', function (subscriptions, client) {
-            console.log(`[TOPIC_UNSUBSCRIBED] Client ${(client ? client.id : client)} unsubscribed to topics: ${subscriptions.join(',')}`)
+            let currentDate = new Date(); 
+
+            console.log(`[${currentDate.toLocaleString()}] Client ${(client ? client.id : client)} unsubscribed to topics: ${subscriptions.join(',')}`)
         })
     }
 
     onReceiveMessage(callback) {
         this.#aedes.on('publish', async function (packet, client) {
+            let currentDate = new Date(); 
+            
             if (client) {
-                console.log(`[MESSAGE_PUBLISHED] Client ${(client ? client.id : 'Unknown')} has published message on ${packet.topic}`)
+                console.log(`[${currentDate.toLocaleString()}] Client ${(client ? client.id : 'Unknown')} has published message on ${packet.topic}`)
 
                 callback(packet.payload);
             }

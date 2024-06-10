@@ -14,7 +14,8 @@ function onReceiveMqttMessage(message) {
                             data.humidity + " " + 
                             data.air_quality + " " +
                             data.dust_concentration + " " +
-                            data.gas_leakage + '\n';
+                            data.gas_leakage + " " +
+                            data.pressure + '\n';
     
         fs.appendFile('data.txt', dataToWrite, function (error) {
             if (error) console.log(error);
@@ -60,7 +61,8 @@ app.get('/last-reading', (req, res) => {
             humidity: parseFloat(lastReading[3]),
             aqi: parseFloat(lastReading[4]),
             dustConcentration: parseFloat(lastReading[5]),
-            gasLeak: lastReading[6] === 'true'
+            gasLeak: lastReading[6] === '1',
+            pressure: parseFloat(lastReading[7])
         };
 
         res.json(reading);
@@ -101,11 +103,12 @@ app.get('/hourly-readings', (req, res) => {
                 let humidity = parseFloat(parts[3]);
                 let aqi = parseFloat(parts[4]);
                 let dustConcentration = parseFloat(parts[5]);
+                let pressure = parseFloat(parts[7]);
 
                 if (humidity < 0) humidity = 0;
                 if (humidity > 100) humidity = 100;
                 if (aqi < 0) aqi = 0;
-                if (aqi > 500) aqi = 500;
+                if (aqi > 100) aqi = 100;
                 if (dustConcentration < 0) dustConcentration = 0;
                 
                 if (hour in hourlyReadings) {
@@ -113,12 +116,14 @@ app.get('/hourly-readings', (req, res) => {
                     hourlyReadings[hour].humidity.push(humidity);
                     hourlyReadings[hour].aqi.push(aqi);
                     hourlyReadings[hour].dustConcentration.push(dustConcentration);
+                    hourlyReadings[hour].pressure.push(pressure);
                 } else {
                     hourlyReadings[hour] = {
                         temp: [temp],
                         humidity: [humidity],
                         aqi: [aqi],
-                        dustConcentration: [dustConcentration]
+                        dustConcentration: [dustConcentration],
+                        pressure: [pressure]
                     };
                 }
             }
@@ -149,23 +154,25 @@ function calculateHourlyAverage(readings) {
         temp: 0,
         humidity: 0,
         aqi: 0,
-        dustConcentration: 0
+        dustConcentration: 0,
+        pressure: 0
     };
 
     readings.temp.forEach(temp => total.temp += temp);
     readings.humidity.forEach(humidity => total.humidity += humidity);
     readings.aqi.forEach(aqi => total.aqi += aqi);
     readings.dustConcentration.forEach(dustConcentration => total.dustConcentration += dustConcentration);
+    readings.pressure.forEach(pressure => total.pressure += pressure)
 
     const count = readings.temp.length;
     return {
         temp: (total.temp / count).toFixed(2),
         humidity: (total.humidity / count).toFixed(2),
         aqi: (total.aqi / count).toFixed(2),
-        dustConcentration: (total.dustConcentration / count).toFixed(2)
+        dustConcentration: (total.dustConcentration / count).toFixed(2),
+        pressure: (total.pressure / count).toFixed(2)
     };
 }
-
 
 // Запит для отримання вимірів за останні кілька днів
 app.get('/daily-averages', (req, res) => {
@@ -203,7 +210,8 @@ app.get('/daily-averages', (req, res) => {
                 let humidity = parseFloat(parts[3]);
                 let aqi = parseFloat(parts[4]);
                 let dustConcentration = parseFloat(parts[5]);
-                const gasLeak = parts[6] === 'true';
+                const gasLeak = parts[6] === '1';
+                let pressure = parseFloat(parts[7]);
 
                 if (humidity < 0) humidity = 0;
                 if (humidity > 100) humidity = 100;
@@ -215,7 +223,7 @@ app.get('/daily-averages', (req, res) => {
                     dailyReadings[readingDate] = [];
                 }
 
-                dailyReadings[readingDate].push({ datetime, temp, humidity, aqi, dustConcentration, gasLeak }); // Зміна з "date" на "datetime"
+                dailyReadings[readingDate].push({ datetime, temp, humidity, aqi, dustConcentration, gasLeak, pressure }); // Зміна з "date" на "datetime"
             }
         });
 
@@ -244,7 +252,8 @@ function calculateDailyAverage(readings) {
         humidity: 0,
         aqi: 0,
         dustConcentration: 0,
-        gasLeakCount: 0
+        gasLeakCount: 0,
+        pressure: 0
     };
 
     readings.forEach(reading => {
@@ -255,6 +264,7 @@ function calculateDailyAverage(readings) {
         if (reading.gasLeak) {
             total.gasLeakCount++;
         }
+        total.pressure += reading.pressure;
     });
 
     const count = readings.length;
@@ -263,7 +273,8 @@ function calculateDailyAverage(readings) {
         humidity: (total.humidity / count).toFixed(2),
         aqi: (total.aqi / count).toFixed(2),
         dustConcentration: (total.dustConcentration / count).toFixed(2),
-        gasLeak: total.gasLeakCount > 0
+        gasLeak: total.gasLeakCount > 0,
+        pressure: (total.pressure / count).toFixed(2)
     };
 }
 

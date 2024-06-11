@@ -129,7 +129,7 @@ app.get('/hourly-readings', (req, res) => {
             }
         });
 
-        if (hourlyReadings.length == 0 || hourlyReadings.length == undefined) {
+        if (Object.keys(hourlyReadings).length == 0) {
             return res.status(404).send({
                 error: "Not found",
                 errorDescription: "No data for that date"
@@ -138,8 +138,7 @@ app.get('/hourly-readings', (req, res) => {
 
         // Обчислення середніх значень за кожну годину
         const hourlyAverages = [];
-        for (let hour = 0; hour < 24; hour++) {
-            const readings = hourlyReadings[hour];
+        for (const [hour, readings] of Object.entries(hourlyReadings)) {
             const average = calculateHourlyAverage(readings);
             hourlyAverages.push({ datetime: `${date} ${hour}:00`, ...average });
         }
